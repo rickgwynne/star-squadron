@@ -189,8 +189,10 @@ canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; 
 .app-exit {
   display: none;
   position: absolute;
-  top: 12px;
-  right: 12px;
+  z-index: 7;
+  left: 50%;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
   width: 28px;
   height: 28px;
   padding: 0;

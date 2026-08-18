@@ -42,4 +42,6 @@ Open the published HTTPS address in Safari, tap **Share**, choose **Add to Home 
 
 Commander enemies are slightly larger than the other attackers. They begin green, survive one hit by changing to blue, and are destroyed by a second hit. A capture attempt uses a slower, glowing corkscrew approach close to the player, followed by descending green radar arcs and a distinct tractor-beam sound. If you remain beneath the beam, your fighter rises slowly in a nearly straight line while continuously rotating before being carried into the enemy formation. Continue with a reserve fighter and destroy that commander during its next diving attack to recover your ship as a wider **Dual Fighter** with two firing lanes.
 
+Enemy silhouettes and flight paths now reflect their distinct arcade roles: compact grunts make broad S-shaped dives, wide-wing guards fly tighter hooks and looping sweeps, and large two-hit commanders use slower, sweeping attacks. Successive Challenging Stages rotate through four different five-wave pattern sets, including mirrored loops, crossing weaves, tightening spirals, and alternating diagonal runs.
+
 Aim carefully: the captive fighter can be hit by your own fire. A dual fighter has twice the firepower, but its wider profile is easier for enemies to hit.

@@ -75,9 +75,9 @@
     player: [
       '......1......','.....111.....','.....121.....','..3..121..3..','.333.121.333.','3333312133333','3333222223333','...3.2.2.3...','.....4.4.....'
     ],
-    bee: ['...1.1...','..11111..','.1122211.','111232111','..12221..','.1.1.1.1.','1.......1'],
-    butterfly: ['1.......1','11..2..11','111222111','.1223221.','..23332..','.1.2.2.1.','1.......1'],
-    boss: ['...1...1...','1..11.11..1','11112221111','.122333221.','..2333332..','..2345432..','.1.33.33.1','1.1.....1.1']
+    bee: ['....1....','...121...','..12221..','.1122211.','111232111','1..222..1','...1.1...','..1...1..'],
+    butterfly: ['1.......1','11..2..11','111222111','.1223221.','..23332..','.1122211.','1.1...1.1','1.......1'],
+    boss: ['1...1.1...1','.1..111..1.','11112221111','.1223333221.','..2334332..','..2345432..','.123333321.','1.1.3.3.1.1','...1...1...']
   };
 
   class Particle {
@@ -95,14 +95,18 @@
   class Enemy {
     constructor(col,row,type,index) {
       this.col=col; this.row=row; this.type=type; this.index=index; this.baseX=88+col*44; this.baseY=125+row*42;
-      this.x=this.baseX; this.y=-50-row*18; this.w=type==='boss'?37:30; this.h=type==='boss'?29:26; this.hp=type==='boss'?2:1; this.state='enter'; this.t= -index*.055; this.dead=false; this.flip=false;
+      this.x=this.baseX; this.y=-50-row*18; this.w=type==='boss'?40:30; this.h=type==='boss'?32:26; this.hp=type==='boss'?2:1; this.state='enter'; this.t= -index*.055; this.dead=false; this.flip=false;this.route=index%4;this.entrySide=((Math.floor(index/8)+index)%2===0)?-1:1;
     }
     update(dt, game) {
       this.t += dt;
       const drift=Math.sin(game.time*1.15)*22;
       if(this.state==='enter') {
-        const p=clamp(this.t/1.2,0,1), ease=1-Math.pow(1-p,3);
-        this.x=this.baseX+drift*ease+Math.sin(p*Math.PI*2)*(1-p)*80; this.y=-40+(this.baseY+40)*ease;
+        const p=clamp(this.t/1.48,0,1), ease=1-Math.pow(1-p,3),side=this.entrySide,loop=(1-p);
+        if(this.route===0){this.x=this.baseX+drift*ease+side*Math.sin(p*Math.PI*2.2)*116*loop;this.y=-42+(this.baseY+42)*ease+Math.sin(p*Math.PI*2)*52*loop;}
+        else if(this.route===1){this.x=this.baseX+drift*ease+side*Math.sin(p*Math.PI*3.2)*92*loop;this.y=-45+(this.baseY+45)*ease+Math.sin(p*Math.PI)*78*loop;}
+        else if(this.route===2){this.x=this.baseX+drift*ease+side*(1-p)*165+Math.sin(p*Math.PI*2)*56*loop;this.y=55+Math.sin(p*Math.PI)*230+(this.baseY-55)*ease;}
+        else {this.x=this.baseX+drift*ease+side*Math.cos(p*Math.PI*2.5)*128*loop;this.y=-38+(this.baseY+38)*ease+Math.sin(p*Math.PI*3)*38*loop;}
+        this.flip=(side*Math.cos(p*Math.PI*(this.route+2)))>0;
         if(p>=1) { this.state='formation'; this.t=0; }
       } else if(this.state==='formation') {
         this.x=this.baseX+drift; this.y=this.baseY+Math.sin(game.time*2+this.col)*3;
@@ -110,9 +114,14 @@
         else if(game.activeEnemies>5 && game.diveTimer<=0 && Math.random()<game.rules.diveChance*dt*60) { this.state='dive'; this.t=0; this.startX=this.x; this.startY=this.y; game.diveTimer=.34; }
       } else if(this.state==='dive') {
         const speed = game.rules.diveSpeed + game.wave*game.rules.diveWave, p=this.t*speed;
-        this.x=this.startX + Math.sin(p*Math.PI*2.15)*(110+this.row*13) + (game.player.x-this.startX)*Math.min(1,p)*.24;
-        this.y=this.startY + p*570;
-        this.flip=Math.sin(p*Math.PI*2.15)>0;
+        const aim=(game.player.x-this.startX)*Math.min(1,p);
+        if(this.type==='bee'){
+          this.x=this.startX+Math.sin(p*Math.PI*2.25)*(118+this.row*12)+aim*.25;this.y=this.startY+p*570;this.flip=Math.cos(p*Math.PI*2.25)<0;
+        }else if(this.type==='butterfly'){
+          this.x=this.startX+Math.sin(p*Math.PI*3.15)*(88+this.row*10)+Math.sin(p*Math.PI)*aim*.2;this.y=this.startY+p*570+Math.sin(p*Math.PI*2)*24;this.flip=Math.cos(p*Math.PI*3.15)<0;
+        }else{
+          const hook=Math.sin(Math.min(1,p)*Math.PI);this.x=this.startX+Math.sin(p*Math.PI*1.72)*142+aim*.3*hook;this.y=this.startY+p*540-Math.sin(p*Math.PI)*30;this.flip=Math.cos(p*Math.PI*1.72)<0;
+        }
         if(Math.random()<game.rules.enemyFire*dt && this.y>230 && this.y<580) game.enemyBullets.push(new Bullet(this.x,this.y+12,game.rules.bulletSpeed+game.wave*game.rules.bulletWave,true));
         if(this.y>H+45) { this.state='formation'; this.t=0; this.y=-30; }
       } else if(this.state==='captureDive') {
@@ -155,26 +164,31 @@
   class ChallengeEnemy {
     constructor(group,index,round){
       this.group=group;this.index=index;this.round=round;this.t=-(1.25+group*5.35+index*.115);this.duration=Math.max(4.3,5.2-round*.05);this.x=W/2;this.y=-40;this.w=28;this.h=24;this.dead=false;this.active=false;this.escaped=false;this.flip=index%2===0;
-      this.type=group===0?'bee':group<3?'butterfly':'boss';
+      const speciesSets=[['bee','bee','butterfly','butterfly','boss'],['butterfly','bee','boss','butterfly','boss'],['bee','butterfly','bee','boss','boss'],['butterfly','boss','bee','butterfly','boss']];
+      this.pattern=(round-1)%4;this.type=speciesSets[this.pattern][group];
     }
     update(dt){
       this.t+=dt;if(this.t<0)return;this.active=true;const p=this.t/this.duration;if(p>=1){this.dead=true;this.escaped=true;return;}
-      if(this.group===0){
-        this.x=W/2+Math.sin(p*Math.PI*2)*148;this.y=-35+p*(H+70);
-      }else if(this.group===1){
-        this.x=W/2+Math.sin(p*Math.PI*4)*118;this.y=-35+p*(H+70);this.flip=Math.cos(p*Math.PI*4)<0;
-      }else if(this.group===2){
-        const side=this.index%2===0?-1:1;this.x=side<0?-35+p*(W+70):W+35-p*(W+70);this.y=105+Math.sin(p*Math.PI)*390;this.flip=side>0;
-      }else if(this.group===3){
-        const radius=175*(1-p*.35);this.x=W/2+Math.cos(p*Math.PI*5)*radius;this.y=-25+p*(H+55);this.flip=Math.sin(p*Math.PI*5)<0;
+      const side=this.index%2===0?-1:1,phase=p*Math.PI;
+      if(this.pattern===0){
+        if(this.group===0){this.x=W/2+Math.sin(phase*2)*148;this.y=-35+p*(H+70);}
+        else if(this.group===1){this.x=W/2+Math.sin(phase*4)*118;this.y=-35+p*(H+70);}
+        else if(this.group===2){this.x=side<0?-35+p*(W+70):W+35-p*(W+70);this.y=105+Math.sin(phase)*390;}
+        else if(this.group===3){const radius=175*(1-p*.35);this.x=W/2+Math.cos(phase*5)*radius;this.y=-25+p*(H+55);}
+        else {this.x=W/2+Math.sin(phase*6)*108;this.y=-30+p*(H+65)+Math.sin(phase*3)*34;}
+      }else if(this.pattern===1){
+        const lane=75+this.group*17;this.x=W/2+side*Math.sin(phase*(2.5+this.group*.45))*lane+Math.sin(phase)*90;this.y=-35+p*(H+70)+Math.cos(phase*2)*22;
+      }else if(this.pattern===2){
+        const radius=(175-this.group*12)*(1-p*.28);this.x=W/2+Math.cos(phase*(3.5+this.group*.4)+side*.65)*radius;this.y=-25+p*(H+55)+Math.sin(phase*2)*35;
       }else{
-        this.x=W/2+Math.sin(p*Math.PI*6)*108;this.y=-30+p*(H+65)+Math.sin(p*Math.PI*3)*34;this.flip=Math.cos(p*Math.PI*6)<0;
+        const cross=side<0?-45+p*(W+90):W+45-p*(W+90);this.x=cross+Math.sin(phase*(3+this.group*.4))*72;this.y=60+Math.sin(phase)*470+Math.sin(phase*4)*20;
       }
+      this.flip=Math.cos(phase*(2.5+this.group*.4))<0;
     }
     draw(){
       if(!this.active||this.dead)return;
-      const palettes=[['#50f3ff','#2869e8','#fff'],['#ff4eaa','#704aff','#ffe34e'],['#ffe34e','#ff4eaa','#fff'],['#a95cff','#ff4eaa','#50f3ff','#ffe34e','#fff'],['#6dff9b','#27aeda','#fff','#ffe34e','#ff4eaa']];
-      drawPixelSprite(this.x,this.y,SPRITES[this.type],palettes[this.group],this.type==='boss'?2.55:2.8,this.flip);
+      const palettes=[['#50f3ff','#2869e8','#fff','#ffe34e','#ff4eaa'],['#ff4eaa','#704aff','#ffe34e','#50f3ff','#fff'],['#ffe34e','#ff4eaa','#fff','#6dff9b','#50f3ff'],['#a95cff','#ff4eaa','#50f3ff','#ffe34e','#fff'],['#6dff9b','#27aeda','#fff','#ffe34e','#ff4eaa']];
+      drawPixelSprite(this.x,this.y,SPRITES[this.type],palettes[(this.group+this.pattern)%palettes.length],this.type==='boss'?2.75:2.8,this.flip);
     }
   }
 

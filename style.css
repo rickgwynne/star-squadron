@@ -228,6 +228,28 @@ canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; 
 }
 .mute.off { color: #777; text-decoration: line-through; }
 
+.game-action {
+  position: absolute;
+  z-index: 6;
+  bottom: 12px;
+  width: 29px;
+  height: 29px;
+  padding: 0;
+  border: 1px solid rgba(126,120,158,.42);
+  border-radius: 7px;
+  background: rgba(8,7,25,.42);
+  color: rgba(203,199,221,.58);
+  font: 700 15px/1 "Chakra Petch", sans-serif;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  opacity: .72;
+}
+.game-action:active { color: #fff; border-color: rgba(180,174,213,.8); background: rgba(28,25,54,.82); }
+.game-action.hidden { display: none; }
+.exit-action { right: 88px; }
+.pause-action { right: 50px; font-size: 12px; letter-spacing: -2px; }
+.pause-action[aria-pressed="true"] { color: rgba(109,255,155,.8); border-color: rgba(109,255,155,.45); }
+
 footer { display: flex; justify-content: space-between; padding: 10px 6px 0; color: #615c7a; font-size: 11px; letter-spacing: 1px; }
 .touch-copy { display: none; }
 

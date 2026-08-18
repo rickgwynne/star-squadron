@@ -9,11 +9,17 @@
   const panel = document.querySelector('#startPanel');
   const startButton = document.querySelector('#startButton');
   const muteButton = document.querySelector('#muteButton');
+  const exitButton = document.querySelector('#exitButton');
+  const pauseButton = document.querySelector('#pauseButton');
   const autoFireButton = document.querySelector('#autoFireButton');
   const screenWrap = document.querySelector('.screen-wrap');
   const difficultyButtons = [...document.querySelectorAll('[data-difficulty]')];
   const keys = { left: false, right: false, fire: false };
+  const TRACTOR_Y = 365;
   let last = performance.now();
+
+  function showMissionControls(show){exitButton.classList.toggle('hidden',!show);pauseButton.classList.toggle('hidden',!show);}
+  function resetPauseButton(){pauseButton.textContent='Ⅱ';pauseButton.setAttribute('aria-label','Pause game');pauseButton.setAttribute('aria-pressed','false');}
 
   const DIFFICULTIES = {
     easy:   { label:'EASY',   lives:4, enemyFire:.16, diveSpeed:.26, diveWave:.012, bulletSpeed:175, bulletWave:6,  diveChance:.010, playerSpeed:310, spawnInv:2.8, captureInv:7 },
@@ -112,11 +118,11 @@
       } else if(this.state==='captureDive') {
         const p=clamp(this.t/1.72,0,1), ease=p*p*(3-2*p), orbit=Math.sin(p*Math.PI)*76, turn=p*Math.PI*4;
         this.x=this.startX+(this.captureX-this.startX)*ease+Math.sin(turn)*orbit;
-        this.y=this.startY+(315-this.startY)*ease-Math.cos(turn)*orbit*.24;
+        this.y=this.startY+(TRACTOR_Y-this.startY)*ease-Math.cos(turn)*orbit*.24;
         this.captureSpin=turn;this.flip=Math.cos(turn)<0;
         if(p>=1){ this.state='beam'; this.t=0; this.captureSpin=0; sound.beam(); }
       } else if(this.state==='beam') {
-        this.x += (this.captureX-this.x)*dt*2.5; this.y=315+Math.sin(game.time*4)*3;
+        this.x += (this.captureX-this.x)*dt*2.5; this.y=TRACTOR_Y+Math.sin(game.time*4)*3;
         if(this.t>3.4 && !game.captureAnim){ this.state='return'; this.t=0; }
       } else if(this.state==='return') {
         this.y-=185*dt; this.x+=(this.baseX+drift-this.x)*dt*2.3;
@@ -181,7 +187,7 @@
     setAutoFire(enabled){this.autoFire=enabled;localStorage.setItem('starSquadronAutoFire',String(enabled));autoFireButton.setAttribute('aria-pressed',String(enabled));autoFireButton.textContent=`AUTO-FIRE: ${enabled?'ON':'OFF'}`;sound.wake();}
     resetPlayer(inv=this.rules.spawnInv){ this.player={x:W/2,y:H-70,w:30,h:25,cool:0,inv,dead:false,dual:false}; }
     begin(){
-      this.score=0; this.lives=this.rules.lives; this.wave=1; this.mode='playing'; this.time=0; this.particles=[]; this.bullets=[]; this.enemyBullets=[]; this.captureAnim=null; this.rescueShip=null; this.capturedBoss=null;this.challenge=false;this.challengeEnding=false; this.resetPlayer(); this.spawnStage(); panel.classList.add('hidden'); sound.start();
+      this.score=0; this.lives=this.rules.lives; this.wave=1; this.mode='playing'; this.time=0; this.particles=[]; this.bullets=[]; this.enemyBullets=[]; this.captureAnim=null; this.rescueShip=null; this.capturedBoss=null;this.challenge=false;this.challengeEnding=false; this.resetPlayer(); this.spawnStage(); panel.classList.add('hidden');resetPauseButton();showMissionControls(true);sound.start();
     }
     isChallengeStage(stage){return stage>=3&&(stage-3)%4===0;}
     spawnStage(){if(this.isChallengeStage(this.wave))this.spawnChallenge();else this.spawnWave();}
@@ -234,7 +240,7 @@
       setTimeout(()=>{ if(this.lives<=0) this.gameOver(); else this.resetPlayer(); },900);
     }
     gameOver(){
-      this.mode='gameover'; if(this.score>this.high){ this.high=this.score; localStorage.setItem('starSquadronHigh',this.high); }
+      this.mode='gameover';showMissionControls(false);resetPauseButton(); if(this.score>this.high){ this.high=this.score; localStorage.setItem('starSquadronHigh',this.high); }
       panel.querySelector('.badge').textContent='MISSION OVER'; panel.querySelector('h2').textContent=this.score>=this.high?'NEW HIGH SCORE':'GAME OVER'; panel.querySelector('.subtitle').textContent=`SCORE ${String(this.score).padStart(6,'0')}`; startButton.textContent='PLAY AGAIN'; panel.classList.remove('hidden');
     }
     update(dt){
@@ -307,13 +313,24 @@
   requestAnimationFrame(loop);
 
   function setKey(code,value){ if(['ArrowLeft','KeyA'].includes(code))keys.left=value;if(['ArrowRight','KeyD'].includes(code))keys.right=value;if(['Space','KeyZ'].includes(code))keys.fire=value; }
-  addEventListener('keydown',e=>{ if(['ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();setKey(e.code,true);if(e.code==='Enter'&&(game.mode==='title'||game.mode==='gameover'))game.begin();if(e.code==='KeyP'&&['playing','paused'].includes(game.mode))game.mode=game.mode==='paused'?'playing':'paused'; });
+  addEventListener('keydown',e=>{ if(['ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();setKey(e.code,true);if(e.code==='Enter'&&(game.mode==='title'||game.mode==='gameover'))game.begin();if(e.code==='KeyP'&&['playing','paused'].includes(game.mode))togglePause(); });
   addEventListener('keyup',e=>setKey(e.code,false));
-  addEventListener('blur',()=>{keys.left=keys.right=keys.fire=false;if(game.mode==='playing')game.mode='paused';});
+  addEventListener('blur',()=>{keys.left=keys.right=keys.fire=false;if(game.mode==='playing')togglePause();});
   startButton.addEventListener('click',()=>game.begin());
   difficultyButtons.forEach(button=>button.addEventListener('click',()=>game.setDifficulty(button.dataset.difficulty)));
   autoFireButton.addEventListener('click',()=>game.setAutoFire(!game.autoFire));
   muteButton.addEventListener('click',()=>{sound.muted=!sound.muted;muteButton.classList.toggle('off',sound.muted);muteButton.textContent=sound.muted?'×':'♪';});
+
+  function togglePause(){
+    if(game.mode==='playing'){game.mode='paused';pauseButton.textContent='▶';pauseButton.setAttribute('aria-label','Resume game');pauseButton.setAttribute('aria-pressed','true');}
+    else if(game.mode==='paused'){game.mode='playing';resetPauseButton();sound.wake();}
+  }
+  pauseButton.addEventListener('click',togglePause);
+  exitButton.addEventListener('click',()=>{
+    keys.left=keys.right=keys.fire=false;game.mode='title';game.bullets=[];game.enemyBullets=[];game.captureAnim=null;game.rescueShip=null;
+    panel.querySelector('.badge').textContent='1 UP';panel.querySelector('h2').textContent='STAR SQUADRON';panel.querySelector('.subtitle').textContent='DEFEND THE LAST CONSTELLATION';startButton.textContent='START MISSION';
+    panel.classList.remove('hidden');showMissionControls(false);resetPauseButton();
+  });
 
   let drag=null;
   screenWrap.addEventListener('pointerdown',e=>{

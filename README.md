@@ -9,6 +9,7 @@ Open `index.html` in a modern browser and select **Start Mission**.
 - Move: Left/Right arrows or A/D
 - Fire: Space or Z
 - Pause: P
+- On-screen pause/resume and exit-to-title controls are available during a mission.
 - On phones and tablets, drag left or right anywhere on the game screen to steer.
 - Optional auto-fire supports comfortable one-handed play and is remembered by the browser.
 - The cabinet scales fluidly to different screen widths and respects iPhone safe areas.

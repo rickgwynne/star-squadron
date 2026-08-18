@@ -35,7 +35,17 @@
     shot() { this.tone(620, .07, 'square', .025, 380); }
     hit() { this.tone(180, .13, 'sawtooth', .05, -120); }
     boom() { this.tone(90, .38, 'sawtooth', .07, -55); }
-    beam() { this.tone(115, .7, 'sawtooth', .035, 210); }
+    beam() {
+      if (this.muted) return;
+      this.wake();
+      const t=this.ctx.currentTime, master=this.ctx.createGain(), carrier=this.ctx.createOscillator(), shimmer=this.ctx.createOscillator(), lfo=this.ctx.createOscillator(), lfoGain=this.ctx.createGain();
+      master.gain.setValueAtTime(.0001,t);master.gain.exponentialRampToValueAtTime(.035,t+.08);master.gain.setValueAtTime(.035,t+3.05);master.gain.exponentialRampToValueAtTime(.0001,t+3.4);
+      carrier.type='sawtooth';carrier.frequency.setValueAtTime(82,t);carrier.frequency.exponentialRampToValueAtTime(148,t+3.35);
+      shimmer.type='triangle';shimmer.frequency.setValueAtTime(246,t);shimmer.frequency.linearRampToValueAtTime(338,t+3.35);
+      lfo.type='sine';lfo.frequency.setValueAtTime(3.2,t);lfoGain.gain.setValueAtTime(.018,t);lfo.connect(lfoGain).connect(master.gain);
+      carrier.connect(master);shimmer.connect(master);master.connect(this.ctx.destination);
+      carrier.start(t);shimmer.start(t);lfo.start(t);carrier.stop(t+3.42);shimmer.stop(t+3.42);lfo.stop(t+3.42);
+    }
     rescue() { [440, 660, 880, 1100].forEach((f, i) => setTimeout(() => this.tone(f, .14, 'square', .035), i * 85)); }
     start() { [330, 440, 660].forEach((f, i) => setTimeout(() => this.tone(f, .16, 'square', .035), i * 95)); }
   }
@@ -100,10 +110,11 @@
         if(Math.random()<game.rules.enemyFire*dt && this.y>230 && this.y<580) game.enemyBullets.push(new Bullet(this.x,this.y+12,game.rules.bulletSpeed+game.wave*game.rules.bulletWave,true));
         if(this.y>H+45) { this.state='formation'; this.t=0; this.y=-30; }
       } else if(this.state==='captureDive') {
-        const p=clamp(this.t/1.15,0,1), ease=1-Math.pow(1-p,3);
-        this.x=this.startX+(this.captureX-this.startX)*ease+Math.sin(p*Math.PI)*55;
-        this.y=this.startY+(315-this.startY)*ease;
-        if(p>=1){ this.state='beam'; this.t=0; sound.beam(); }
+        const p=clamp(this.t/1.72,0,1), ease=p*p*(3-2*p), orbit=Math.sin(p*Math.PI)*76, turn=p*Math.PI*4;
+        this.x=this.startX+(this.captureX-this.startX)*ease+Math.sin(turn)*orbit;
+        this.y=this.startY+(315-this.startY)*ease-Math.cos(turn)*orbit*.24;
+        this.captureSpin=turn;this.flip=Math.cos(turn)<0;
+        if(p>=1){ this.state='beam'; this.t=0; this.captureSpin=0; sound.beam(); }
       } else if(this.state==='beam') {
         this.x += (this.captureX-this.x)*dt*2.5; this.y=315+Math.sin(game.time*4)*3;
         if(this.t>3.4 && !game.captureAnim){ this.state='return'; this.t=0; }
@@ -115,11 +126,22 @@
     draw() {
       const colors = this.type==='boss' ? ['#a95cff','#ff4eaa','#50f3ff','#ffe34e','#fff'] : this.type==='butterfly' ? ['#ff4eaa','#5e5cff','#ffe34e'] : ['#50f3ff','#2c63e7','#fff'];
       if(this.state==='beam'){
-        const beam=ctx.createLinearGradient(0,this.y+10,0,H-42);beam.addColorStop(0,'rgba(80,243,255,.78)');beam.addColorStop(.48,'rgba(124,92,255,.22)');beam.addColorStop(1,'rgba(255,78,170,.08)');
-        ctx.fillStyle=beam;ctx.beginPath();ctx.moveTo(this.x-9,this.y+10);ctx.lineTo(this.x-48,H-42);ctx.lineTo(this.x+48,H-42);ctx.lineTo(this.x+9,this.y+10);ctx.closePath();ctx.fill();
-        ctx.strokeStyle='rgba(191,255,255,.55)';ctx.setLineDash([5,9]);ctx.stroke();ctx.setLineDash([]);
+        const top=this.y+17,bottom=H-43,length=bottom-top,glow=ctx.createLinearGradient(0,top,0,bottom);
+        glow.addColorStop(0,'rgba(116,255,130,.26)');glow.addColorStop(.55,'rgba(65,255,105,.10)');glow.addColorStop(1,'rgba(21,190,78,0)');
+        ctx.fillStyle=glow;ctx.beginPath();ctx.moveTo(this.x-7,top);ctx.lineTo(this.x-52,bottom);ctx.lineTo(this.x+52,bottom);ctx.lineTo(this.x+7,top);ctx.closePath();ctx.fill();
+        ctx.save();ctx.lineCap='round';ctx.shadowColor='#55ff86';ctx.shadowBlur=12;
+        for(let i=0;i<7;i++){
+          const phase=(this.t*.24+i/7)%1,y=top+phase*length,rx=10+phase*43,ry=4+phase*10,alpha=.28+(1-phase)*.68;
+          ctx.strokeStyle=`rgba(105,255,139,${alpha})`;ctx.lineWidth=phase<.18?3:2;
+          ctx.beginPath();ctx.ellipse(this.x,y,rx,ry,0,0,Math.PI);ctx.stroke();
+        }
+        ctx.restore();
       }
-      drawPixelSprite(this.x,this.y,SPRITES[this.type],colors,3,this.flip);
+      if(this.state==='captureDive'){
+        ctx.save();ctx.translate(this.x,this.y);ctx.rotate(this.captureSpin||0);ctx.shadowColor='#6dff9b';ctx.shadowBlur=15;
+        drawPixelSprite(0,0,SPRITES[this.type],colors,3,this.flip);ctx.restore();
+        ctx.strokeStyle='rgba(109,255,155,.55)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(this.x,this.y,24+Math.sin(this.t*13)*5,10,0,0,Math.PI*2);ctx.stroke();
+      } else drawPixelSprite(this.x,this.y,SPRITES[this.type],colors,3,this.flip);
       if(this.carrying) drawPixelSprite(this.x,this.y+(this.state==='dive'?-31:31),SPRITES.player,['#b7b4c7','#77758c','#4f5068','#ff4eaa'],2.4,true);
       if(this.type==='boss' && this.hp===1) { ctx.fillStyle='#ffef74'; ctx.fillRect(this.x-3,this.y-3,6,6); }
     }
@@ -230,7 +252,7 @@
         this.bullets=this.bullets.filter(b=>!b.dead);this.enemies=this.enemies.filter(e=>!e.dead);this.activeEnemies=this.enemies.length;if(this.enemies.length===0)this.finishChallenge();return;
       }
       if(this.captureTimer<=0&&!this.capturedBoss&&!this.captureAnim&&!this.player.dual&&!this.player.dead&&this.lives>1){const boss=this.enemies.find(e=>e.type==='boss'&&e.state==='formation');if(boss){boss.state='captureDive';boss.t=0;boss.startX=boss.x;boss.startY=boss.y;boss.captureX=this.player.x;this.captureTimer=14;this.message='COMMANDER INBOUND';this.messageTimer=1.4;}}
-      const beamer=this.enemies.find(e=>e.state==='beam');if(beamer&&!this.captureAnim&&!this.player.dead&&Math.abs(this.player.x-beamer.x)<42)this.beginCapture(beamer);
+      const beamer=this.enemies.find(e=>e.state==='beam');if(beamer&&beamer.t>1.05&&!this.captureAnim&&!this.player.dead&&Math.abs(this.player.x-beamer.x)<42)this.beginCapture(beamer);
       for(const b of this.bullets) for(const e of this.enemies) if(!b.dead&&!e.dead){
         if(e.carrying&&hit(b,{x:e.x,y:e.y+(e.state==='dive'?-31:31),w:28,h:24})){b.dead=true;this.destroyCaptive(e);continue;}
         if(hit(b,e)){b.dead=true;e.hp--;sound.hit();this.explode(b.x,b.y,['#fff','#ffe34e']);if(e.hp<=0){if(e.carrying&&e.state==='dive')this.rescue(e);else if(e.carrying)this.destroyCaptive(e);e.dead=true;this.score+=e.type==='boss'?400:e.state==='dive'?200:100;this.explode(e.x,e.y);}}

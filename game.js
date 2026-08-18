@@ -216,7 +216,7 @@
     }
     beginCapture(boss){
       if(this.captureAnim||this.player.dead||this.player.dual)return;
-      this.player.dead=true;this.bullets=[];this.captureAnim={boss,t:0,x:this.player.x,y:this.player.y,complete:false};this.message='TRACTOR LOCK';this.messageTimer=1.1;
+      this.player.dead=true;this.bullets=[];this.captureAnim={boss,t:0,x:this.player.x,y:this.player.y,startX:this.player.x,startY:this.player.y,rotation:0,complete:false};this.message='TRACTOR LOCK';this.messageTimer=1.7;
     }
     finishCapture(anim){
       anim.complete=true;anim.boss.carrying=true;anim.boss.state='return';anim.boss.t=0;this.capturedBoss=anim.boss;this.lives--;this.message='FIGHTER CAPTURED';this.messageTimer=2.1;this.enemyBullets=[];
@@ -243,7 +243,12 @@
       this.messageTimer-=dt; this.diveTimer-=dt; this.captureTimer-=dt; this.player.cool-=dt; this.player.inv-=dt;
       if(this.challengeEnding){this.challengeEndTimer-=dt;if(this.challengeEndTimer<=0){this.wave++;this.player.inv=this.rules.spawnInv;this.spawnStage();}return;}
       if(this.respawnTimer!=null){this.respawnTimer-=dt;if(this.respawnTimer<=0){this.resetPlayer(this.respawnInv||1.8);this.respawnInv=null;this.respawnTimer=null;}}
-      if(this.captureAnim){const a=this.captureAnim;a.t+=dt;const p=clamp(a.t/.85,0,1);a.x+=(a.boss.x-a.x)*dt*5;a.y+=(a.boss.y+22-a.y)*dt*5;if(p>=1&&!a.complete)this.finishCapture(a);}
+      if(this.captureAnim){
+        const a=this.captureAnim;a.t+=dt;const p=clamp(a.t/1.65,0,1),ease=p*p*(3-2*p),turn=p*Math.PI*4,radius=Math.sin(p*Math.PI)*27;
+        const baseX=a.startX+(a.boss.x-a.startX)*ease,baseY=a.startY+(a.boss.y+22-a.startY)*ease;
+        a.x=baseX+Math.cos(turn)*radius;a.y=baseY+Math.sin(turn)*radius*.55;a.rotation=p*Math.PI*6;
+        if(p>=1&&!a.complete)this.finishCapture(a);
+      }
       if(this.rescueShip){const r=this.rescueShip;r.t+=dt;r.x+=(this.player.x-r.x)*dt*3.5;r.y+=(this.player.y-r.y)*dt*3.5;if(r.t>1.25){this.player.dual=true;this.player.w=52;this.player.inv=2;this.rescueShip=null;this.message='DUAL FIGHTER';this.messageTimer=2;sound.rescue();}}
       if(!this.player.dead){ const dx=(keys.right?1:0)-(keys.left?1:0); this.player.x=clamp(this.player.x+dx*this.rules.playerSpeed*dt,24,W-24); if(keys.fire||this.autoFire) this.fire(); }
       this.enemies.forEach(e=>e.update(dt,this)); this.bullets.forEach(b=>b.update(dt)); this.enemyBullets.forEach(b=>b.update(dt));
@@ -276,7 +281,10 @@
     draw(){
       this.drawBackground(); this.drawHud();
       this.enemies?.forEach(e=>e.draw()); this.bullets.forEach(b=>b.draw()); this.enemyBullets.forEach(b=>b.draw()); this.particles.forEach(p=>p.draw());
-      if(this.captureAnim) drawPixelSprite(this.captureAnim.x,this.captureAnim.y,SPRITES.player,['#fff','#50f3ff','#4385ff','#ff4eaa'],3,true);
+      if(this.captureAnim){
+        const a=this.captureAnim;ctx.save();ctx.translate(a.x,a.y);ctx.rotate(a.rotation);ctx.shadowColor='#6dff9b';ctx.shadowBlur=16;
+        drawPixelSprite(0,0,SPRITES.player,['#fff','#50f3ff','#4385ff','#ff4eaa'],3,true);ctx.restore();
+      }
       if(this.rescueShip) drawPixelSprite(this.rescueShip.x,this.rescueShip.y,SPRITES.player,['#fff','#50f3ff','#4385ff','#ff4eaa'],2.7,true);
       if(!this.player.dead && (this.player.inv<=0 || Math.floor(this.player.inv*10)%2===0)){
         if(this.player.dual){drawPixelSprite(this.player.x-11,this.player.y,SPRITES.player,['#fff','#50f3ff','#4385ff','#ff4eaa'],3);drawPixelSprite(this.player.x+11,this.player.y,SPRITES.player,['#fff','#50f3ff','#4385ff','#ff4eaa'],3);}

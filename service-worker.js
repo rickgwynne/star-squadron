@@ -1,4 +1,4 @@
-const CACHE = 'star-squadron-v1';
+const CACHE = 'star-squadron-v2';
 const CORE = [
   './', './index.html', './style.css', './game.js', './pwa.js', './manifest.webmanifest',
   './assets/fonts/chakra-petch-500.ttf', './assets/fonts/chakra-petch-700.ttf', './assets/fonts/press-start-2p.ttf',

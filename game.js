@@ -9,6 +9,8 @@
   const panel = document.querySelector('#startPanel');
   const startButton = document.querySelector('#startButton');
   const muteButton = document.querySelector('#muteButton');
+  const autoFireButton = document.querySelector('#autoFireButton');
+  const screenWrap = document.querySelector('.screen-wrap');
   const difficultyButtons = [...document.querySelectorAll('[data-difficulty]')];
   const keys = { left: false, right: false, fire: false };
   let last = performance.now();
@@ -151,9 +153,10 @@
 
   class Game {
     constructor(){
-      this.high=Number(localStorage.getItem('starSquadronHigh')||10000); this.difficulty=localStorage.getItem('starSquadronDifficulty')||'normal';if(!DIFFICULTIES[this.difficulty])this.difficulty='normal';this.rules=DIFFICULTIES[this.difficulty];this.mode='title'; this.time=0; this.particles=[]; this.bullets=[]; this.enemyBullets=[]; this.wave=1; this.score=0; this.lives=this.rules.lives; this.message=''; this.messageTimer=0; this.captureAnim=null; this.rescueShip=null; this.capturedBoss=null;this.challenge=false;this.challengeEnding=false; this.resetPlayer();
+      this.high=Number(localStorage.getItem('starSquadronHigh')||10000); this.difficulty=localStorage.getItem('starSquadronDifficulty')||'normal';if(!DIFFICULTIES[this.difficulty])this.difficulty='normal';this.rules=DIFFICULTIES[this.difficulty];this.autoFire=localStorage.getItem('starSquadronAutoFire')==='true';this.mode='title'; this.time=0; this.particles=[]; this.bullets=[]; this.enemyBullets=[]; this.wave=1; this.score=0; this.lives=this.rules.lives; this.message=''; this.messageTimer=0; this.captureAnim=null; this.rescueShip=null; this.capturedBoss=null;this.challenge=false;this.challengeEnding=false; this.resetPlayer();
     }
     setDifficulty(level){if(this.mode==='playing'||!DIFFICULTIES[level])return;this.difficulty=level;this.rules=DIFFICULTIES[level];localStorage.setItem('starSquadronDifficulty',level);difficultyButtons.forEach(b=>b.classList.toggle('active',b.dataset.difficulty===level));}
+    setAutoFire(enabled){this.autoFire=enabled;localStorage.setItem('starSquadronAutoFire',String(enabled));autoFireButton.setAttribute('aria-pressed',String(enabled));autoFireButton.textContent=`AUTO-FIRE: ${enabled?'ON':'OFF'}`;sound.wake();}
     resetPlayer(inv=this.rules.spawnInv){ this.player={x:W/2,y:H-70,w:30,h:25,cool:0,inv,dead:false,dual:false}; }
     begin(){
       this.score=0; this.lives=this.rules.lives; this.wave=1; this.mode='playing'; this.time=0; this.particles=[]; this.bullets=[]; this.enemyBullets=[]; this.captureAnim=null; this.rescueShip=null; this.capturedBoss=null;this.challenge=false;this.challengeEnding=false; this.resetPlayer(); this.spawnStage(); panel.classList.add('hidden'); sound.start();
@@ -220,7 +223,7 @@
       if(this.respawnTimer!=null){this.respawnTimer-=dt;if(this.respawnTimer<=0){this.resetPlayer(this.respawnInv||1.8);this.respawnInv=null;this.respawnTimer=null;}}
       if(this.captureAnim){const a=this.captureAnim;a.t+=dt;const p=clamp(a.t/.85,0,1);a.x+=(a.boss.x-a.x)*dt*5;a.y+=(a.boss.y+22-a.y)*dt*5;if(p>=1&&!a.complete)this.finishCapture(a);}
       if(this.rescueShip){const r=this.rescueShip;r.t+=dt;r.x+=(this.player.x-r.x)*dt*3.5;r.y+=(this.player.y-r.y)*dt*3.5;if(r.t>1.25){this.player.dual=true;this.player.w=52;this.player.inv=2;this.rescueShip=null;this.message='DUAL FIGHTER';this.messageTimer=2;sound.rescue();}}
-      if(!this.player.dead){ const dx=(keys.right?1:0)-(keys.left?1:0); this.player.x=clamp(this.player.x+dx*this.rules.playerSpeed*dt,24,W-24); if(keys.fire) this.fire(); }
+      if(!this.player.dead){ const dx=(keys.right?1:0)-(keys.left?1:0); this.player.x=clamp(this.player.x+dx*this.rules.playerSpeed*dt,24,W-24); if(keys.fire||this.autoFire) this.fire(); }
       this.enemies.forEach(e=>e.update(dt,this)); this.bullets.forEach(b=>b.update(dt)); this.enemyBullets.forEach(b=>b.update(dt));
       if(this.challenge){
         for(const b of this.bullets)for(const e of this.enemies)if(!b.dead&&!e.dead&&e.active&&hit(b,e)){b.dead=true;this.hitChallengeEnemy(e);}
@@ -268,6 +271,8 @@
 
   const game = new Game();
   game.setDifficulty(game.difficulty);
+  autoFireButton.setAttribute('aria-pressed',String(game.autoFire));
+  autoFireButton.textContent=`AUTO-FIRE: ${game.autoFire?'ON':'OFF'}`;
   function loop(now){ const dt=Math.min(.033,(now-last)/1000);last=now;if(game.mode!=='paused')game.update(dt);game.draw();requestAnimationFrame(loop); }
   requestAnimationFrame(loop);
 
@@ -277,8 +282,22 @@
   addEventListener('blur',()=>{keys.left=keys.right=keys.fire=false;if(game.mode==='playing')game.mode='paused';});
   startButton.addEventListener('click',()=>game.begin());
   difficultyButtons.forEach(button=>button.addEventListener('click',()=>game.setDifficulty(button.dataset.difficulty)));
+  autoFireButton.addEventListener('click',()=>game.setAutoFire(!game.autoFire));
   muteButton.addEventListener('click',()=>{sound.muted=!sound.muted;muteButton.classList.toggle('off',sound.muted);muteButton.textContent=sound.muted?'×':'♪';});
 
-  function bindHold(id,key){ const el=document.querySelector(id); const on=e=>{e.preventDefault();keys[key]=true;el.classList.add('pressed');sound.wake();if(key==='fire'&&game.mode==='playing')game.fire();};const off=e=>{e.preventDefault();keys[key]=false;el.classList.remove('pressed');};el.addEventListener('pointerdown',on);el.addEventListener('pointerup',off);el.addEventListener('pointercancel',off);el.addEventListener('pointerleave',off); }
-  bindHold('#leftButton','left');bindHold('#rightButton','right');bindHold('#fireButton','fire');
+  let drag=null;
+  screenWrap.addEventListener('pointerdown',e=>{
+    if(game.mode!=='playing'||e.target.closest('button'))return;
+    e.preventDefault();sound.wake();
+    try{screenWrap.setPointerCapture(e.pointerId);}catch{}
+    drag={id:e.pointerId,startX:e.clientX,playerX:game.player.x};screenWrap.classList.add('dragging');
+  });
+  screenWrap.addEventListener('pointermove',e=>{
+    if(!drag||drag.id!==e.pointerId||game.mode!=='playing')return;
+    e.preventDefault();const scale=W/canvas.getBoundingClientRect().width;
+    game.player.x=clamp(drag.playerX+(e.clientX-drag.startX)*scale,24,W-24);
+  });
+  function endDrag(e){if(!drag||drag.id!==e.pointerId)return;drag=null;screenWrap.classList.remove('dragging');}
+  screenWrap.addEventListener('pointerup',endDrag);
+  screenWrap.addEventListener('pointercancel',endDrag);
 })();

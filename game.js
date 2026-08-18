@@ -63,6 +63,53 @@
   const lerp = (a, b, t) => a + (b - a) * t;
   const hit = (a, b) => Math.abs(a.x - b.x) < (a.w + b.w) / 2 && Math.abs(a.y - b.y) < (a.h + b.h) / 2;
 
+  function sampleArcadeRoute(points, progress) {
+    const p=clamp(progress,0,.999999),span=points.length-1,scaled=p*span,i=Math.floor(scaled),t=scaled-i;
+    const p0=points[Math.max(0,i-1)],p1=points[i],p2=points[Math.min(span,i+1)],p3=points[Math.min(span,i+2)];
+    const curve=(a,b,c,d)=>.5*((2*b)+(-a+c)*t+(2*a-5*b+4*c-d)*t*t+(-a+3*b-3*c+d)*t*t*t);
+    return {x:curve(p0[0],p1[0],p2[0],p3[0]),y:curve(p0[1],p1[1],p2[1],p3[1])};
+  }
+
+  const mirrorRoute=points=>points.map(([x,y])=>[1-x,y]);
+  const ARCADE_CHALLENGE_ROUTES={
+    hookRight:[[.50,-.08],[.50,.10],[.46,.28],[.35,.48],[.23,.66],[.28,.82],[.48,.75],[.67,.55],[.78,.30],[.72,.10],[.58,-.08]],
+    hookLeft:null,
+    longHookRight:[[.50,-.08],[.50,.12],[.43,.31],[.27,.48],[.15,.68],[.26,.91],[.52,.82],[.73,.58],[.84,.30],[.74,.08],[.58,-.08]],
+    longHookLeft:null,
+    fountainLeft:[[.47,-.08],[.46,.17],[.43,.39],[.38,.65],[.27,.86],[.08,.87],[-.08,.68],[.03,.39],[.24,.22],[.45,.14],[.53,-.08]],
+    fountainRight:null,
+    centreS:[[.50,-.08],[.50,.13],[.42,.27],[.32,.43],[.42,.57],[.61,.66],[.69,.79],[.57,.92],[.39,.81],[.31,.62],[.42,.45],[.59,.29],[.62,.10],[.55,-.08]],
+    centreSMirror:null,
+    sideLoopLeft:[[-.08,.18],[.15,.20],[.34,.34],[.38,.55],[.24,.70],[.08,.61],[.12,.42],[.31,.35],[.50,.48],[.58,.72],[.48,1.08]],
+    sideLoopRight:null,
+    figureEight:[[.50,-.08],[.50,.13],[.33,.28],[.25,.47],[.38,.61],[.61,.47],[.72,.29],[.61,.16],[.39,.30],[.28,.50],[.40,.70],[.63,.78],[.78,.92],[.84,1.08]],
+    figureEightMirror:null,
+    cloverLeft:[[.50,-.08],[.49,.15],[.34,.23],[.22,.39],[.30,.55],[.48,.49],[.38,.34],[.21,.47],[.27,.67],[.49,.72],[.42,.88],[.24,1.08]],
+    cloverRight:null,
+    wideCrownLeft:[[-.08,.12],[.15,.18],[.34,.31],[.46,.48],[.34,.66],[.14,.72],[.09,.51],[.28,.39],[.50,.51],[.55,.75],[.42,1.08]],
+    wideCrownRight:null,
+    lowSweepLeft:[[.50,-.08],[.49,.18],[.38,.39],[.22,.63],[.08,.84],[-.08,.86],[.12,.70],[.35,.62],[.55,.71],[.72,.90],[.78,1.08]],
+    lowSweepRight:null,
+    spiralLeft:[[.50,-.08],[.48,.14],[.31,.24],[.20,.43],[.31,.61],[.52,.59],[.63,.40],[.51,.27],[.34,.37],[.35,.56],[.54,.70],[.73,.83],[.86,1.08]],
+    spiralRight:null,
+    commanderLeft:[[.48,-.08],[.46,.13],[.31,.26],[.18,.43],[.22,.63],[.40,.75],[.50,.62],[.42,.45],[.25,.56],[.22,.79],[.41,.90],[.53,1.08]],
+    commanderRight:null
+  };
+  for(const pair of [['hookLeft','hookRight'],['longHookLeft','longHookRight'],['fountainRight','fountainLeft'],['centreSMirror','centreS'],['sideLoopRight','sideLoopLeft'],['figureEightMirror','figureEight'],['cloverRight','cloverLeft'],['wideCrownRight','wideCrownLeft'],['lowSweepRight','lowSweepLeft'],['spiralRight','spiralLeft'],['commanderRight','commanderLeft']])ARCADE_CHALLENGE_ROUTES[pair[0]]=mirrorRoute(ARCADE_CHALLENGE_ROUTES[pair[1]]);
+
+  // Five fixed eight-ship strings for each of the arcade game's eight-stage bonus cycle.
+  // Split entries use the first route for ships 1-4 and its partner for ships 5-8.
+  const ARCADE_CHALLENGE_WAVES=[
+    [['hookRight'],['hookLeft'],['longHookRight'],['longHookLeft'],['commanderLeft','commanderRight']],
+    [['fountainLeft','fountainRight'],['hookRight','hookLeft'],['sideLoopLeft','sideLoopRight'],['fountainRight','fountainLeft'],['commanderLeft','commanderRight']],
+    [['centreS'],['centreSMirror'],['figureEight'],['figureEightMirror'],['commanderLeft','commanderRight']],
+    [['sideLoopLeft','sideLoopRight'],['wideCrownLeft','wideCrownRight'],['cloverLeft'],['cloverRight'],['commanderLeft','commanderRight']],
+    [['spiralLeft'],['spiralRight'],['fountainLeft','fountainRight'],['figureEight','figureEightMirror'],['commanderLeft','commanderRight']],
+    [['lowSweepLeft','lowSweepRight'],['centreS','centreSMirror'],['cloverLeft','cloverRight'],['wideCrownLeft','wideCrownRight'],['commanderLeft','commanderRight']],
+    [['figureEight','figureEightMirror'],['spiralLeft','spiralRight'],['sideLoopLeft','sideLoopRight'],['lowSweepLeft','lowSweepRight'],['commanderLeft','commanderRight']],
+    [['wideCrownLeft','wideCrownRight'],['cloverLeft','cloverRight'],['figureEight','figureEightMirror'],['spiralLeft','spiralRight'],['commanderLeft','commanderRight']]
+  ];
+
   const stars = Array.from({ length: 105 }, () => ({ x: rand(0, W), y: rand(0, H), s: Math.random() < .15 ? 2 : 1, v: rand(18, 85), c: ['#fff', '#50f3ff', '#ff7bc0', '#8e8bff'][Math.floor(rand(0, 4))] }));
 
   function drawPixelSprite(x, y, pattern, colors, scale = 3, flip = false) {
@@ -184,23 +231,15 @@
 
   class ChallengeEnemy {
     constructor(group,index,round){
-      this.group=group;this.index=index;this.round=round;this.t=-(1.15+group*4.95+index*.12);this.duration=Math.max(4.1,5.05-round*.035);this.x=W/2;this.y=-40;this.dead=false;this.active=false;this.escaped=false;this.flip=index%2===0;this.pattern=(round-1)%8;
+      this.group=group;this.index=index;this.round=round;this.pattern=(round-1)%8;this.t=-(1.8+group*5.85+index*.118);this.duration=Math.max(4.55,5.35-Math.min(round-1,7)*.07);this.x=W/2;this.y=-40;this.dead=false;this.active=false;this.escaped=false;this.flip=index%2===0;
       const featured=['bee','butterfly','dragonfly','scorpion','satellite','stingray','flagship','enterprise'][this.pattern];
-      this.type=group===4&&index>=4?'boss':featured;this.hp=this.type==='boss'?2:1;this.w=this.type==='boss'?36:29;this.h=this.type==='boss'?30:25;
+      this.type=group===4&&index>=4?'boss':featured;this.hp=this.type==='boss'?2:1;this.w=this.type==='boss'?39:29;this.h=this.type==='boss'?33:25;
+      const wave=ARCADE_CHALLENGE_WAVES[this.pattern][group];this.routeName=wave.length===1?wave[0]:wave[index<4?0:1];this.route=ARCADE_CHALLENGE_ROUTES[this.routeName];
     }
     update(dt){
       this.t+=dt;if(this.t<0)return;this.active=true;const p=this.t/this.duration;if(p>=1){this.dead=true;this.escaped=true;return;}
-      const side=this.group%2===0?-1:1,phase=p*Math.PI*2,g=this.group;let x,y;
-      if(this.pattern===0){x=W/2+Math.sin(phase*1.15+g*.42)*150;y=118+p*365+Math.sin(phase*1.05)*54;}
-      else if(this.pattern===1){x=W/2+Math.sin(phase*2+g*.38)*112;y=120+p*350+Math.cos(phase)*62;}
-      else if(this.pattern===2){x=W/2+Math.sin(phase)*165;y=280-Math.cos(phase*2+g*.3)*165;}
-      else if(this.pattern===3){const radius=175*(1-p*.42);x=W/2+Math.cos(phase*2.45+g*.45)*radius;y=285+Math.sin(phase*2.45+g*.45)*185*(1-p*.35);}
-      else if(this.pattern===4){x=W/2+side*Math.cos(phase*1.7)*155;y=290+Math.sin(phase*3.4+g*.5)*170;}
-      else if(this.pattern===5){x=55+p*(W-110);y=265+Math.sin(phase*2.35+g*.5)*190;if(side>0)x=W-x;}
-      else if(this.pattern===6){x=W/2+Math.sin(phase*1.5+g*.7)*175;y=120+Math.abs(Math.sin(phase*.75))*380;}
-      else {const radius=118+Math.sin(phase*2)*45;x=W/2+Math.cos(phase*2.15+g*.55)*radius;y=280+Math.sin(phase*2.15+g*.55)*190;}
-      const entry=clamp(p/.14,0,1),exit=clamp((p-.82)/.18,0,1),startX=side<0?-42:W+42,endX=side<0?W+54:-54;
-      this.x=lerp(lerp(startX,x,entry),endX,exit);this.y=lerp(lerp(-32,clamp(y,92,535),entry),105+g*38,exit);this.flip=Math.cos(phase*(1.5+this.pattern*.11)+g*.4)<0;
+      const here=sampleArcadeRoute(this.route,p),ahead=sampleArcadeRoute(this.route,Math.min(.999,p+.008));
+      this.x=here.x*W;this.y=78+here.y*500;this.flip=ahead.x-here.x<0;
     }
     draw(){
       if(!this.active||this.dead)return;
@@ -218,7 +257,8 @@
     setAutoFire(enabled){this.autoFire=enabled;localStorage.setItem('starSquadronAutoFire',String(enabled));autoFireButton.setAttribute('aria-pressed',String(enabled));autoFireButton.textContent=`AUTO-FIRE: ${enabled?'ON':'OFF'}`;sound.wake();}
     resetPlayer(inv=this.rules.spawnInv){ this.player={x:W/2,y:H-70,w:30,h:25,cool:0,inv,dead:false,dual:false}; }
     begin(){
-      this.score=0;this.lives=this.rules.lives;this.nextExtraLife=20000;this.extraLifeNotice=0;this.wave=1;this.mode='playing';this.time=0;this.particles=[];this.bullets=[];this.enemyBullets=[];this.captureAnim=null;this.rescueShip=null;this.capturedBoss=null;this.challenge=false;this.challengeEnding=false;this.resetPlayer();this.spawnStage();panel.classList.add('hidden');resetPauseButton();showMissionControls(true);sound.start();
+      const previewStage=Number(new URLSearchParams(location.search).get('stage'));
+      this.score=0;this.lives=this.rules.lives;this.nextExtraLife=20000;this.extraLifeNotice=0;this.wave=Number.isInteger(previewStage)&&previewStage>0?previewStage:1;this.mode='playing';this.time=0;this.particles=[];this.bullets=[];this.enemyBullets=[];this.captureAnim=null;this.rescueShip=null;this.capturedBoss=null;this.challenge=false;this.challengeEnding=false;this.resetPlayer();this.spawnStage();panel.classList.add('hidden');resetPauseButton();showMissionControls(true);sound.start();
     }
     isChallengeStage(stage){return stage>=3&&(stage-3)%4===0;}
     spawnStage(){if(this.isChallengeStage(this.wave))this.spawnChallenge();else this.spawnWave();}

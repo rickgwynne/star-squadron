@@ -26,7 +26,7 @@ Your selected difficulty is remembered by the browser and appears beneath the wa
 
 ## Challenging Stages
 
-Stages 3, 7, 11, 15, and every fourth stage thereafter are no-danger bonus rounds. Five groups of eight targets follow distinct, learnable flight paths without firing or colliding with your fighter.
+Stages 3, 7, 11, 15, and every fourth stage thereafter are no-danger bonus rounds. Five groups of eight targets follow fixed, learnable arcade-style flight paths without firing or colliding with your fighter.
 
 - Each target: 100 points
 - Each complete group: 1,000–3,000 points depending on the bonus round
@@ -44,7 +44,7 @@ Commander enemies are slightly larger than the other attackers. They begin green
 
 Enemy silhouettes and flight paths reflect their distinct arcade roles: compact grunts make broad S-shaped dives, wide-wing guards fly tighter hooks and looping sweeps, and large two-hit commanders use slower attacks accompanied by guard escorts. Each regular stage begins with five choreographed eight-ship entrance squadrons that loop in from alternating sides before settling into formation.
 
-Successive Challenging Stages rotate through eight themed galleries. Alongside grunts, guards, and four green-to-blue two-hit commanders, later rounds introduce dragonfly, scorpion, satellite, stingray, flagship, and starship targets. Their five rehearsed waves use mirrored loops, figure-eights, bow ties, tightening spirals, wave ribbons, angular swoops, and wide orbits. They never fire, collide with the fighter, deploy tractor beams, or descend into the player's safety lane.
+Successive Challenging Stages rotate through eight themed galleries. Alongside grunts, guards, and four green-to-blue two-hit commanders, later rounds introduce dragonfly, scorpion, satellite, stingray, flagship, and starship targets. Their five rehearsed eight-ship strings now use recorded centre hooks, paired fountains, low sweeps, mirrored side loops, figure-eights, clover crossings, spirals, and commander finales. Every route is deterministic, with arcade-like single-file spacing and direction changes. They never fire, collide with the fighter, or deploy tractor beams.
 
 Following the classic arcade bonus-life setting, an extra fighter is awarded at 20,000 points, 70,000 points, and every additional 70,000 points.
 

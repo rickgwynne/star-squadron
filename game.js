@@ -15,7 +15,7 @@
   const screenWrap = document.querySelector('.screen-wrap');
   const difficultyButtons = [...document.querySelectorAll('[data-difficulty]')];
   const keys = { left: false, right: false, fire: false };
-  const TRACTOR_Y = 365;
+  const TRACTOR_Y = 465;
   let last = performance.now();
 
   function showMissionControls(show){exitButton.classList.toggle('hidden',!show);pauseButton.classList.toggle('hidden',!show);}
@@ -95,7 +95,7 @@
   class Enemy {
     constructor(col,row,type,index) {
       this.col=col; this.row=row; this.type=type; this.index=index; this.baseX=88+col*44; this.baseY=125+row*42;
-      this.x=this.baseX; this.y=-50-row*18; this.w=type==='boss'?34:30; this.h=26; this.hp=type==='boss'?2:1; this.state='enter'; this.t= -index*.055; this.dead=false; this.flip=false;
+      this.x=this.baseX; this.y=-50-row*18; this.w=type==='boss'?37:30; this.h=type==='boss'?29:26; this.hp=type==='boss'?2:1; this.state='enter'; this.t= -index*.055; this.dead=false; this.flip=false;
     }
     update(dt, game) {
       this.t += dt;
@@ -130,7 +130,7 @@
       }
     }
     draw() {
-      const colors = this.type==='boss' ? ['#a95cff','#ff4eaa','#50f3ff','#ffe34e','#fff'] : this.type==='butterfly' ? ['#ff4eaa','#5e5cff','#ffe34e'] : ['#50f3ff','#2c63e7','#fff'];
+      const colors = this.type==='boss' ? (this.hp===2 ? ['#baffc9','#39dd73','#139d50','#50f3ff','#fff'] : ['#d9f4ff','#50f3ff','#2874e8','#203aa8','#fff']) : this.type==='butterfly' ? ['#ff4eaa','#5e5cff','#ffe34e'] : ['#50f3ff','#2c63e7','#fff'];
       if(this.state==='beam'){
         const top=this.y+17,bottom=H-43,length=bottom-top,glow=ctx.createLinearGradient(0,top,0,bottom);
         glow.addColorStop(0,'rgba(116,255,130,.26)');glow.addColorStop(.55,'rgba(65,255,105,.10)');glow.addColorStop(1,'rgba(21,190,78,0)');
@@ -145,11 +145,10 @@
       }
       if(this.state==='captureDive'){
         ctx.save();ctx.translate(this.x,this.y);ctx.rotate(this.captureSpin||0);ctx.shadowColor='#6dff9b';ctx.shadowBlur=15;
-        drawPixelSprite(0,0,SPRITES[this.type],colors,3,this.flip);ctx.restore();
+        drawPixelSprite(0,0,SPRITES[this.type],colors,this.type==='boss'?3.25:3,this.flip);ctx.restore();
         ctx.strokeStyle='rgba(109,255,155,.55)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(this.x,this.y,24+Math.sin(this.t*13)*5,10,0,0,Math.PI*2);ctx.stroke();
-      } else drawPixelSprite(this.x,this.y,SPRITES[this.type],colors,3,this.flip);
+      } else drawPixelSprite(this.x,this.y,SPRITES[this.type],colors,this.type==='boss'?3.25:3,this.flip);
       if(this.carrying) drawPixelSprite(this.x,this.y+(this.state==='dive'?-31:31),SPRITES.player,['#b7b4c7','#77758c','#4f5068','#ff4eaa'],2.4,true);
-      if(this.type==='boss' && this.hp===1) { ctx.fillStyle='#ffef74'; ctx.fillRect(this.x-3,this.y-3,6,6); }
     }
   }
 
@@ -250,9 +249,9 @@
       if(this.challengeEnding){this.challengeEndTimer-=dt;if(this.challengeEndTimer<=0){this.wave++;this.player.inv=this.rules.spawnInv;this.spawnStage();}return;}
       if(this.respawnTimer!=null){this.respawnTimer-=dt;if(this.respawnTimer<=0){this.resetPlayer(this.respawnInv||1.8);this.respawnInv=null;this.respawnTimer=null;}}
       if(this.captureAnim){
-        const a=this.captureAnim;a.t+=dt;const p=clamp(a.t/1.65,0,1),ease=p*p*(3-2*p),turn=p*Math.PI*4,radius=Math.sin(p*Math.PI)*27;
+        const a=this.captureAnim;a.t+=dt;const p=clamp(a.t/2.75,0,1),ease=p*p*(3-2*p);
         const baseX=a.startX+(a.boss.x-a.startX)*ease,baseY=a.startY+(a.boss.y+22-a.startY)*ease;
-        a.x=baseX+Math.cos(turn)*radius;a.y=baseY+Math.sin(turn)*radius*.55;a.rotation=p*Math.PI*6;
+        a.x=baseX;a.y=baseY;a.rotation=p*Math.PI*8;
         if(p>=1&&!a.complete)this.finishCapture(a);
       }
       if(this.rescueShip){const r=this.rescueShip;r.t+=dt;r.x+=(this.player.x-r.x)*dt*3.5;r.y+=(this.player.y-r.y)*dt*3.5;if(r.t>1.25){this.player.dual=true;this.player.w=52;this.player.inv=2;this.rescueShip=null;this.message='DUAL FIGHTER';this.messageTimer=2;sound.rescue();}}

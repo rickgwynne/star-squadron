@@ -40,6 +40,7 @@
         </button>
         <button id="startButton">START MISSION</button>
         <button id="installButton" class="install-button" type="button">INSTALL ON IPHONE</button>
+        <button id="appExitButton" class="app-exit" type="button" aria-label="Exit app">×</button>
         <p class="controls-hint"><span class="touch-copy">DRAG ANYWHERE TO MOVE</span><span class="keyboard-copy">← → or A D to move</span><br>SPACE to fire · P to pause</p>
       </div>
       <div id="installPanel" class="install-panel hidden" role="dialog" aria-modal="true" aria-labelledby="installTitle">
@@ -54,6 +55,13 @@
           </ol>
           <p>Once opened, Star Squadron works offline and runs full-screen.</p>
           <button id="closeInstallButton" type="button">GOT IT</button>
+        </div>
+      </div>
+      <div id="exitPanel" class="install-panel hidden" role="dialog" aria-modal="true" aria-labelledby="exitTitle">
+        <div class="install-card exit-card">
+          <h2 id="exitTitle">EXIT STAR SQUADRON</h2>
+          <p>iPhone does not allow a Home Screen web app to close itself. Swipe up from the bottom edge to return to your Home Screen.</p>
+          <button id="closeExitButton" type="button">BACK</button>
         </div>
       </div>
       <button id="exitButton" class="game-action exit-action hidden" type="button" aria-label="Exit mission">×</button>

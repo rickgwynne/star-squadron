@@ -186,6 +186,22 @@ canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; 
 .install-button:hover { color: var(--cyan); border-color: var(--cyan); }
 .install-button.hidden { display: none; }
 
+.app-exit {
+  display: none;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid rgba(126,120,158,.38);
+  border-radius: 7px;
+  background: rgba(8,7,25,.34);
+  color: rgba(203,199,221,.52);
+  font: 700 16px/1 "Chakra Petch", sans-serif;
+}
+.exit-card { text-align: center; }
+
 .install-panel {
   position: absolute;
   z-index: 9;
@@ -268,4 +284,4 @@ footer { display: flex; justify-content: space-between; padding: 10px 6px 0; col
   footer { font-size: 8px; gap: 8px; }
 }
 @media (max-width: 330px) { footer span:first-child, footer span:last-child { display: none; } footer { justify-content: center; } }
-@media (display-mode: standalone) { body { padding-top: max(8px, env(safe-area-inset-top)); } .install-button { display: none; } }
+@media (display-mode: standalone) { body { padding-top: max(8px, env(safe-area-inset-top)); } .install-button { display: none; } .app-exit { display: block; } }

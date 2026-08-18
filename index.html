@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#05051a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Star Squadron" />
+  <meta name="description" content="A neon pixel-art arcade shooter with capture-and-rescue dual fighters and challenging bonus stages." />
+  <title>Star Squadron</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="cabinet" aria-label="Star Squadron arcade game">
+    <header class="marquee">
+      <span class="star">✦</span>
+      <h1>STAR <em>SQUADRON</em></h1>
+      <span class="star">✦</span>
+    </header>
+
+    <section class="screen-wrap">
+      <canvas id="game" width="480" height="720" aria-label="Game screen"></canvas>
+      <div id="startPanel" class="overlay">
+        <div class="badge">1 UP</div>
+        <h2>STAR SQUADRON</h2>
+        <p class="subtitle">DEFEND THE LAST CONSTELLATION</p>
+        <fieldset class="difficulty" aria-label="Difficulty">
+          <legend>DIFFICULTY</legend>
+          <button type="button" data-difficulty="easy">EASY</button>
+          <button type="button" data-difficulty="normal" class="active">NORMAL</button>
+          <button type="button" data-difficulty="hard">HARD</button>
+        </fieldset>
+        <button id="startButton">START MISSION</button>
+        <button id="installButton" class="install-button" type="button">INSTALL ON IPHONE</button>
+        <p class="controls-hint">← → or A D to move<br>SPACE to fire · P to pause</p>
+      </div>
+      <div id="installPanel" class="install-panel hidden" role="dialog" aria-modal="true" aria-labelledby="installTitle">
+        <div class="install-card">
+          <span class="install-icon">↗</span>
+          <h2 id="installTitle">INSTALL THE GAME</h2>
+          <ol>
+            <li>Open this page in <strong>Safari</strong>.</li>
+            <li>Tap the <strong>Share</strong> button.</li>
+            <li>Choose <strong>Add to Home Screen</strong>.</li>
+            <li>Tap <strong>Add</strong>, then launch the new icon.</li>
+          </ol>
+          <p>Once opened, Star Squadron works offline and runs full-screen.</p>
+          <button id="closeInstallButton" type="button">GOT IT</button>
+        </div>
+      </div>
+      <button id="muteButton" class="mute" aria-label="Toggle sound">♪</button>
+    </section>
+
+    <section class="mobile-controls" aria-label="Touch controls">
+      <div class="dpad">
+        <button id="leftButton" aria-label="Move left">◀</button>
+        <button id="rightButton" aria-label="Move right">▶</button>
+      </div>
+      <button id="fireButton" class="fire" aria-label="Fire">FIRE</button>
+    </section>
+
+    <footer>
+      <span>MOVE</span><span>MISSION 1981½</span><span>FIRE</span>
+    </footer>
+  </main>
+  <script src="game.js"></script>
+  <script src="pwa.js"></script>
+</body>
+</html>

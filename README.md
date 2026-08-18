@@ -44,7 +44,11 @@ Commander enemies are slightly larger than the other attackers. They begin green
 
 Enemy silhouettes and flight paths reflect their distinct arcade roles: compact grunts make broad S-shaped dives, wide-wing guards fly tighter hooks and looping sweeps, and large two-hit commanders use slower attacks accompanied by guard escorts. Each regular stage begins with five choreographed eight-ship entrance squadrons that loop in from alternating sides before settling into formation.
 
+Enemy pixel art uses original sprite grids with arcade-faithful colour roles: yellow-and-blue grunts, red-winged blue guards, and larger commanders that change from green to blue after their first hit.
+
 Successive Challenging Stages rotate through eight themed galleries. Alongside grunts, guards, and four green-to-blue two-hit commanders, later rounds introduce dragonfly, scorpion, satellite, stingray, flagship, and starship targets. Their five rehearsed eight-ship strings now use recorded centre hooks, paired fountains, low sweeps, mirrored side loops, figure-eights, clover crossings, spirals, and commander finales. Every route is deterministic, with arcade-like single-file spacing and direction changes. They never fire, collide with the fighter, or deploy tractor beams.
+
+The active run is checkpointed at every stage boundary so a browser or installed PWA refresh resumes with the correct score, lives, and next stage instead of restarting at Stage 1.
 
 Following the classic arcade bonus-life setting, an extra fighter is awarded at 20,000 points, 70,000 points, and every additional 70,000 points.
 

@@ -48,7 +48,7 @@ Enemy pixel art uses original sprite grids with arcade-faithful colour roles: ye
 
 Successive Challenging Stages rotate through eight themed galleries. Alongside grunts, guards, and four green-to-blue two-hit commanders, later rounds introduce dragonfly, scorpion, satellite, stingray, flagship, and starship targets. Their five rehearsed eight-ship strings now use recorded centre hooks, paired fountains, low sweeps, mirrored side loops, figure-eights, clover crossings, spirals, and commander finales. Every route is deterministic, with arcade-like single-file spacing and direction changes. They never fire, collide with the fighter, or deploy tractor beams.
 
-The active run is checkpointed at every stage boundary so a browser or installed PWA refresh resumes with the correct score, lives, and next stage instead of restarting at Stage 1.
+The active run is saved durably during play and at every stage boundary, so a tab reload, browser restart, or installed-PWA update resumes with the correct score, lives, and next stage instead of restarting at Stage 1. Versioned game files and a network-first app shell prevent an older cached build from silently taking over.
 
 Following the classic arcade bonus-life setting, an extra fighter is awarded at 20,000 points, 70,000 points, and every additional 70,000 points.
 

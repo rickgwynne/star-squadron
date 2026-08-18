@@ -8,9 +8,15 @@
   const closeExitButton = document.querySelector('#closeExitButton');
   const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   let installPrompt = null;
+  let refreshing = false;
 
   if ('serviceWorker' in navigator) {
-    addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(() => {}));
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return;
+      refreshing = true;
+      location.reload();
+    });
+    addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js?v=11',{updateViaCache:'none'}).then(registration=>registration.update()).catch(() => {}));
   }
 
   if (standalone) installButton.classList.add('hidden');

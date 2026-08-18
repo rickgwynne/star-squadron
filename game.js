@@ -15,6 +15,9 @@
   const screenWrap = document.querySelector('.screen-wrap');
   const difficultyButtons = [...document.querySelectorAll('[data-difficulty]')];
   const keys = { left: false, right: false, fire: false };
+  const LOCAL_HOST=['localhost','127.0.0.1'].includes(location.hostname);
+  const LOCAL_PARAMS=new URLSearchParams(location.search);
+  const QA_PROGRESSION=LOCAL_HOST&&LOCAL_PARAMS.get('qa')==='progression';
   const TRACTOR_Y = 465;
   let last = performance.now();
 
@@ -26,6 +29,7 @@
     normal: { label:'NORMAL', lives:3, enemyFire:.24, diveSpeed:.30, diveWave:.015, bulletSpeed:195, bulletWave:8,  diveChance:.014, playerSpeed:295, spawnInv:2.2, captureInv:6 },
     hard:   { label:'HARD',   lives:3, enemyFire:.34, diveSpeed:.34, diveWave:.018, bulletSpeed:220, bulletWave:10, diveChance:.018, playerSpeed:285, spawnInv:1.8, captureInv:5 }
   };
+  const RUN_KEY='starSquadronActiveRunV2';
 
   class Synth {
     constructor() { this.ctx = null; this.muted = false; }
@@ -254,13 +258,13 @@
       this.high=Number(localStorage.getItem('starSquadronHigh')||10000); this.difficulty=localStorage.getItem('starSquadronDifficulty')||'normal';if(!DIFFICULTIES[this.difficulty])this.difficulty='normal';this.rules=DIFFICULTIES[this.difficulty];this.autoFire=localStorage.getItem('starSquadronAutoFire')==='true';this.mode='title'; this.time=0; this.particles=[]; this.bullets=[]; this.enemyBullets=[]; this.wave=1; this.score=0; this.lives=this.rules.lives;this.nextExtraLife=20000;this.extraLifeNotice=0; this.message=''; this.messageTimer=0; this.captureAnim=null; this.rescueShip=null; this.capturedBoss=null;this.challenge=false;this.challengeEnding=false; this.resetPlayer();
     }
     saveRun(){
-      try{sessionStorage.setItem('starSquadronRun',JSON.stringify({active:true,wave:this.wave,score:this.score,lives:this.lives,nextExtraLife:this.nextExtraLife,difficulty:this.difficulty,savedAt:Date.now()}));}catch{}
+      try{localStorage.setItem(RUN_KEY,JSON.stringify({active:true,wave:this.wave,score:this.score,lives:this.lives,nextExtraLife:this.nextExtraLife,difficulty:this.difficulty,savedAt:Date.now()}));}catch{}
     }
-    clearRun(){try{sessionStorage.removeItem('starSquadronRun');}catch{}}
+    clearRun(){try{localStorage.removeItem(RUN_KEY);sessionStorage.removeItem('starSquadronRun');}catch{}}
     restoreRun(){
       try{
-        const saved=JSON.parse(sessionStorage.getItem('starSquadronRun')||'null');
-        if(!saved?.active||Date.now()-saved.savedAt>6*60*60*1000||!DIFFICULTIES[saved.difficulty])return false;
+        const saved=JSON.parse(localStorage.getItem(RUN_KEY)||'null');
+        if(!saved?.active||Date.now()-saved.savedAt>24*60*60*1000||!DIFFICULTIES[saved.difficulty])return false;
         this.wave=Math.max(1,saved.wave|0);this.score=Math.max(0,saved.score|0);this.lives=Math.max(1,saved.lives|0);this.nextExtraLife=Math.max(20000,saved.nextExtraLife|0);this.difficulty=saved.difficulty;this.rules=DIFFICULTIES[this.difficulty];this.mode='playing';this.resetPlayer();this.spawnStage();panel.classList.add('hidden');resetPauseButton();showMissionControls(true);return true;
       }catch{return false;}
     }
@@ -277,6 +281,7 @@
     advanceStage(){this.wave++;this.enemyBullets=[];this.spawnStage();this.saveRun();}
     spawnWave(){
       this.challenge=false;this.challengeEnding=false;this.challengeSummary=null;
+      this.qaClearTimer=0;
       this.enemies=[];let entryOrder=0;
       for(const row of [4,3,2,1,0])for(let col=0;col<8;col++){const type=row===0?'boss':row<3?'butterfly':'bee';this.enemies.push(new Enemy(col,row,type,entryOrder++));}
       this.diveTimer=2; this.captureTimer=this.wave===1?3.8:6.5; this.message=`STAGE ${this.wave}`; this.messageTimer=2.2;
@@ -294,13 +299,14 @@
     }
     finishChallenge(){
       if(this.challengeEnding)return;this.challengeEnding=true;const perfect=this.challengeHits===40,perfectBonus=perfect?10000:0;if(perfectBonus){this.addScore(perfectBonus);sound.rescue();}
-      this.challengeSummary={hits:this.challengeHits,shotBonus:this.challengeHits*100,groupBonus:this.challengeGroupBonus,perfect,perfectBonus};this.challengeEndTimer=4.8;this.bullets=[];this.message='';this.messageTimer=0;
+      this.challengeSummary={hits:this.challengeHits,shotBonus:this.challengeHits*100,groupBonus:this.challengeGroupBonus,perfect,perfectBonus};this.challengeEndTimer=3.2;this.bullets=[];this.message='';this.messageTimer=0;
     }
     explode(x,y,colors=['#ff4eaa','#50f3ff','#ffe34e']){ for(let i=0;i<18;i++) this.particles.push(new Particle(x,y,colors[i%colors.length])); }
     addScore(points){
       this.score+=points;let earned=false;
       while(this.score>=this.nextExtraLife){this.lives++;earned=true;this.nextExtraLife=this.nextExtraLife===20000?70000:this.nextExtraLife+70000;}
       if(earned){this.extraLifeNotice=2.5;sound.extra();}
+      if(this.mode==='playing')this.saveRun();
     }
     fire(){
       const limit=this.player.dual?6:3;
@@ -316,6 +322,7 @@
     }
     finishCapture(anim){
       anim.complete=true;anim.boss.carrying=true;anim.boss.state='return';anim.boss.t=0;this.capturedBoss=anim.boss;this.lives--;this.message='FIGHTER CAPTURED';this.messageTimer=2.1;this.enemyBullets=[];
+      this.saveRun();
       if(this.lives<=0){setTimeout(()=>this.gameOver(),650);return;}
       this.respawnTimer=1;this.respawnInv=this.rules.captureInv;this.captureAnim=null;
     }
@@ -327,6 +334,7 @@
       if(this.player.inv>0 || this.player.dead) return;
       if(this.player.dual){this.player.dual=false;this.player.w=30;this.player.inv=2;this.lives--;this.explode(this.player.x+12,this.player.y,['#fff','#50f3ff','#ff4eaa']);sound.boom();this.message='WING FIGHTER LOST';this.messageTimer=1.5;if(this.lives<=0)this.gameOver();return;}
       this.player.dead=true; this.explode(this.player.x,this.player.y,['#fff','#50f3ff','#ff4eaa']); sound.boom(); this.lives--;
+      this.saveRun();
       setTimeout(()=>{ if(this.lives<=0) this.gameOver(); else this.resetPlayer(); },900);
     }
     gameOver(){
@@ -347,6 +355,7 @@
       }
       if(this.rescueShip){const r=this.rescueShip;r.t+=dt;r.x+=(this.player.x-r.x)*dt*3.5;r.y+=(this.player.y-r.y)*dt*3.5;if(r.t>1.25){this.player.dual=true;this.player.w=52;this.player.inv=2;this.rescueShip=null;this.message='DUAL FIGHTER';this.messageTimer=2;sound.rescue();}}
       if(!this.player.dead){ const dx=(keys.right?1:0)-(keys.left?1:0); this.player.x=clamp(this.player.x+dx*this.rules.playerSpeed*dt,24,W-24); if(keys.fire||this.autoFire) this.fire(); }
+      if(QA_PROGRESSION&&!this.challenge&&this.wave<4){this.qaClearTimer+=dt;if(this.qaClearTimer>1.2){this.addScore(800);this.enemies.forEach(e=>e.dead=true);this.qaClearTimer=-999;}}
       this.enemies.forEach(e=>e.update(dt,this)); this.bullets.forEach(b=>b.update(dt)); this.enemyBullets.forEach(b=>b.update(dt));
       if(this.challenge){
         for(const b of this.bullets)for(const e of this.enemies)if(!b.dead&&!e.dead&&e.active&&hit(b,e)){b.dead=true;this.hitChallengeEnemy(e);}
@@ -401,15 +410,23 @@
   autoFireButton.setAttribute('aria-pressed',String(game.autoFire));
   autoFireButton.textContent=`AUTO-FIRE: ${game.autoFire?'ON':'OFF'}`;
   if(game.restoreRun())difficultyButtons.forEach(b=>b.classList.toggle('active',b.dataset.difficulty===game.difficulty));
-  const localSpeed=['localhost','127.0.0.1'].includes(location.hostname)?clamp(Number(new URLSearchParams(location.search).get('speed'))||1,1,12):1;
+  const localSpeed=LOCAL_HOST?clamp(Number(LOCAL_PARAMS.get('speed'))||1,1,12):1;
   function loop(now){ const dt=Math.min(.033,(now-last)/1000)*localSpeed;last=now;if(game.mode!=='paused')game.update(dt);game.draw();requestAnimationFrame(loop); }
   requestAnimationFrame(loop);
 
   function setKey(code,value){ if(['ArrowLeft','KeyA'].includes(code))keys.left=value;if(['ArrowRight','KeyD'].includes(code))keys.right=value;if(['Space','KeyZ'].includes(code))keys.fire=value; }
-  addEventListener('keydown',e=>{ if(['ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();setKey(e.code,true);if(e.code==='Enter'&&(game.mode==='title'||game.mode==='gameover'))game.begin();if(e.code==='KeyP'&&['playing','paused'].includes(game.mode))togglePause(); });
+  addEventListener('keydown',e=>{
+    if(['ArrowLeft','ArrowRight','Space','Enter'].includes(e.code))e.preventDefault();
+    setKey(e.code,true);
+    if(e.code==='Enter'){
+      if((game.mode==='title'||game.mode==='gameover')&&!e.repeat){document.activeElement?.blur();game.begin();}
+      else if(game.mode==='playing'&&game.challengeEnding)game.challengeEndTimer=Math.min(game.challengeEndTimer,.12);
+    }
+    if(e.code==='KeyP'&&['playing','paused'].includes(game.mode))togglePause();
+  });
   addEventListener('keyup',e=>setKey(e.code,false));
   addEventListener('blur',()=>{keys.left=keys.right=keys.fire=false;if(game.mode==='playing')togglePause();});
-  startButton.addEventListener('click',()=>game.begin());
+  startButton.addEventListener('click',()=>{startButton.blur();game.begin();});
   difficultyButtons.forEach(button=>button.addEventListener('click',()=>game.setDifficulty(button.dataset.difficulty)));
   autoFireButton.addEventListener('click',()=>game.setAutoFire(!game.autoFire));
   muteButton.addEventListener('click',()=>{sound.muted=!sound.muted;muteButton.classList.toggle('off',sound.muted);muteButton.textContent=sound.muted?'×':'♪';});
